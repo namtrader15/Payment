@@ -1,0 +1,63 @@
+/* ================================
+   Hiệu ứng load card & chuyển màn
+   ================================ */
+
+/* Card xuất hiện mượt khi mở trang */
+.payment-card {
+  animation: cardIntro 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cardIntro {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Khi đổi giữa 2 màn: CHỌN COIN <-> QR */
+.screen.active {
+  /* vẫn giữ display:block; từ file gốc,
+     chỉ thêm animation vào */
+  animation: fadeInUp 0.32s ease-out;
+  transform-origin: top center;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* QR và chi tiết thanh toán cũng cho nhẹ 1 nhịp */
+#screen-payment.active .pay-main {
+  animation: fadeIn 0.30s 0.05s ease-out both;
+}
+#screen-payment.active .qr-box img {
+  animation: fadeIn 0.55s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Hover vào từng đồng coin mượt hơn một chút */
+.currency-item {
+  transition:
+    background 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.18s ease;
+}

