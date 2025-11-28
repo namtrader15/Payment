@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FTMO Crypto Payment Mock</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* NỀN VÀNG + HIỆU ỨNG */
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #facc15 0%, #f97316 40%, #fef3c7 100%);
+      background-size: 180% 180%;
+      animation: bg-pan 18s ease-in-out infinite;
+    }
+
+    @keyframes bg-pan {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .payment-shell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px;
+    }
+
+    /* THẺ CHÍNH: GLASS + FLOAT */
+    .payment-card {
+      width: 100%;
+      max-width: 575px; /* tăng ~25% so với 460px */
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(250, 204, 21, 0.35);
+      box-shadow:
+        0 20px 60px rgba(15, 23, 42, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.6);
+      overflow: hidden;
+      backdrop-filter: blur(18px);
+      animation: floatCard 9s ease-in-out infinite;
+    }
+
+    @keyframes floatCard {
+      0%, 100% {
+        transform: translateY(0);
+        box-shadow:
+          0 20px 60px rgba(15, 23, 42, 0.4),
+          0 0 0 1px rgba(255, 255, 255, 0.6);
+      }
+      50% {
+        transform: translateY(-6px);
+        box-shadow:
+          0 28px 70px rgba(15, 23, 42, 0.55),
+          0 0 0 1px rgba(255, 255, 255, 0.7);
+      }
+    }
+
+    /* HEADER VÀNG */
+    .payment-header {
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: linear-gradient(135deg, #facc15 0%, #f97316 40%, #fed7aa 100%);
+    }
+
+    .header-logo {
+      width: 55px;  /* to hơn 1 chút cho cân */
+      height: 55px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #f9fafb;
+      font-weight: 700;
+      font-size: 22px;
+      flex-shrink: 0;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.6);
+    }
+
+    .header-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .header-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-sub {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #4b5563;
+    }
+
+    .header-amount {
+      font-weight: 700;
+      font-size: 19px;
+      color: #111827;
+      white-space: nowrap;
+    }
+
+    .payment-body {
+      padding: 18px 20px 14px;
+    }
+
+    /* STATE SCREEN */
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .screen-title {
+      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .screen-subtitle {
+      text-align: center;
+      font-size: 11px;
+      color: #6b7280;
+      margin-bottom: 14px;
+    }
+
+    /* SEARCH */
+    .search-wrapper {
+      position: relative;
+      margin-bottom: 10px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 32px 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      font-size: 13px;
+      outline: none;
+      background: #fefce8;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .search-input:focus {
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.3);
+      background: #ffffff;
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    /* DANH SÁCH COIN */
+    .currency-list {
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 4px;
+      margin-bottom: 4px;
+    }
+
+    .currency-item {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      padding: 9px 8px;
+      gap: 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition:
+        background 0.15s ease,
+        transform 0.12s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .currency-item:hover {
+      background: rgba(250, 204, 21, 0.10);
+      transform: translateY(-1px) scale(1.01);
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+    }
+
+    .currency-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 15px;
+      flex-shrink: 0;
+      color: #111827;
+      box-shadow: 0 2px 5px rgba(15, 23, 42, 0.25);
+    }
+
+    .icon-btc {
+      background: linear-gradient(135deg, #facc15, #f97316);
+    }
+
+    .icon-usdt {
+      background: linear-gradient(135deg, #fef9c3, #bbf7d0);
+      color: #047857;
+    }
+
+    .icon-usdc {
+      background: linear-gradient(135deg, #eff6ff, #93c5fd);
+      color: #1d4ed8;
+    }
+
+    .icon-eth {
+      background: linear-gradient(135deg, #e5e7eb, #f3f4f6);
+    }
+
+    .icon-ltc {
+      background: linear-gradient(135deg, #faf5ff, #e0f2fe);
+    }
+
+    .currency-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .currency-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .currency-sub {
+      margin-top: 2px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .currency-amount {
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      color: #374151;
+      text-align: right;
+      min-width: 90px;
+    }
+
+    .currency-chevron {
+      font-size: 16px;
+      color: #9ca3af;
+      margin-left: 4px;
+    }
+
+    .no-result {
+      font-size: 12px;
+      text-align: center;
+      color: #9ca3af;
+      padding: 14px 6px 4px;
+    }
+
+    /* MÀN QR */
+    .back-methods {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #4b5563;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .back-methods span {
+      font-size: 14px;
+    }
+
+    .back-methods:hover {
+      color: #f59e0b;
+    }
+
+    .pay-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .pay-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .pay-coin-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .pay-coin-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .pay-coin-network {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .pay-amount-box {
+      text-align: right;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pay-amount-crypto {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .pay-amount-fiat {
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    .pay-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+      gap: 14px;
+      align-items: center;
+    }
+
+    @media (max-width: 480px) {
+      .pay-main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* QR + HIỆU ỨNG PULSE */
+    .qr-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .qr-box img {
+      width: 238px;   /* tăng ~25% từ 190 */
+      height: 238px;
+      border-radius: 16px;
+      border: 1px solid rgba(250, 204, 21, 0.45);
+      object-fit: cover;
+      background: #fefce8;
+      box-shadow:
+        0 0 0 1px rgba(250, 204, 21, 0.3),
+        0 12px 30px rgba(15, 23, 42, 0.28);
+      animation: qrPulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes qrPulse {
+      0%, 100% {
+        box-shadow:
+          0 0 0 1px rgba(250, 204, 21, 0.3),
+          0 12px 30px rgba(15, 23, 42, 0.28);
+      }
+      50% {
+        box-shadow:
+          0 0 0 6px rgba(250, 204, 21, 0.4),
+          0 18px 40px rgba(15, 23, 42, 0.45);
+      }
+    }
+
+    .qr-caption {
+      font-size: 11px;
+      color: #6b7280;
+      text-align: center;
+    }
+
+    .details-box {
+      font-size: 11px;
+      color: #4b5563;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .details-row-label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-bottom: 2px;
+    }
+
+    .details-row-value {
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .address-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: #fefce8;
+      border: 1px solid #e5e7eb;
+      word-break: break-all;
+    }
+
+    .address-text {
+      flex: 1;
+    }
+
+    .copy-btn {
+      flex-shrink: 0;
+      border-radius: 999px;
+      border: none;
+      padding: 4px 10px;
+      font-size: 11px;
+      background: linear-gradient(135deg, #facc15, #f97316);
+      color: #111827;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(248, 181, 0, 0.5);
+      transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .copy-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(248, 181, 0, 0.7);
+    }
+
+    .copy-btn.copied {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #ecfdf5;
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.6);
+    }
+
+    .status-line {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #facc15;
+      margin-right: 4px;
+      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.25);
+    }
+
+    /* FOOTER + PROGRESS */
+    .payment-footer {
+      border-top: 1px solid #f3f4f6;
+      padding: 9px 18px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .back-link {
+      text-decoration: none;
+      color: #4b5563;
+      transition: color 0.15s ease;
+    }
+
+    .back-link:hover {
+      color: #f59e0b;
+      text-decoration: underline;
+    }
+
+    .expires {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 3px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .progress-inner {
+      height: 100%;
+      background: linear-gradient(90deg, #22c55e, #facc15, #f97316, #ef4444);
+      background-size: 200% 200%;
+      transform-origin: left;
+      transform: scaleX(1);
+      animation: progressGlow 3s linear infinite;
+    }
+
+    @keyframes progressGlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .brand-footer {
+      font-size: 10px;
+      color: #fefce8;
+      text-align: center;
+      text-shadow: 0 1px 2px rgba(15, 23, 42, 0.4);
+    }
+
+    .brand-footer a {
+      color: #fef9c3;
+      text-decoration: none;
+    }
+
+    .brand-footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="payment-shell">
+    <div class="payment-card" data-state="methods">
+      <div class="payment-header">
+        <div class="header-logo">F</div>
+        <div class="header-main">
+          <div class="header-title">FTMO Challenge</div>
+          <div class="header-sub">Invoice ID:  invz2PZa7x4M9gdFTMO70-XXXX</div>
+        </div>
+        <div class="header-amount" id="invoice-amount">0.00 USD</div>
+      </div>
+
+      <div class="payment-body">
+        <!-- SCREEN 1: CHỌN COIN -->
+        <section class="screen active" id="screen-methods">
+          <div class="screen-title">Pay with</div>
+          <div class="screen-subtitle">
+            Choose a cryptocurrency to pay your FTMO challenge.
+          </div>
+
+          <div class="search-wrapper">
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Search for a cryptocurrency..."
+              id="search-input"
+            />
+            <span class="search-icon">🔍</span>
+          </div>
+
+          <div class="currency-list" id="currency-list"></div>
+          <div class="no-result" id="no-result" style="display:none;">
+            No currency found. Try another symbol.
+          </div>
+        </section>
+
+        <!-- SCREEN 2: QR & CHI TIẾT -->
+        <section class="screen" id="screen-payment">
+          <div class="back-methods" id="back-methods">
+            <span>←</span> All payment methods
+          </div>
+
+          <div class="pay-header">
+            <div class="pay-header-left">
+              <div class="currency-icon" id="pay-icon"></div>
+              <div class="pay-coin-info">
+                <div class="pay-coin-name" id="pay-coin-name">Bitcoin</div>
+                <div class="pay-coin-network" id="pay-coin-network">Network: Bitcoin</div>
+              </div>
+            </div>
+            <div class="pay-amount-box">
+              <div class="pay-amount-crypto" id="pay-amount-crypto">0.0000 BTC</div>
+              <div class="pay-amount-fiat" id="pay-amount-fiat">≈ 0.00 USD</div>
+            </div>
+          </div>
+
+          <div class="pay-main">
+            <div class="qr-box">
+              <!-- ĐỔI SRC TỰ ĐỘNG BẰNG JS -->
+              <img src="qr-btc.png" alt="Payment QR" id="pay-qr" />
+              <div class="qr-caption">
+                Scan this QR with your wallet app.
+              </div>
+            </div>
+
+            <div class="details-box">
+              <div>
+                <div class="details-row-label">Exact amount to send</div>
+                <div class="details-row-value" id="details-amount">
+                  0.0000 BTC
+                </div>
+              </div>
+
+              <div>
+                <div class="details-row-label">Wallet address</div>
+                <div class="address-row">
+                  <div class="address-text" id="details-address">
+                    your-wallet-address-here
+                  </div>
+                  <button class="copy-btn" id="copy-btn">Copy</button>
+                </div>
+              </div>
+
+              <div>
+                <div class="details-row-label">Important</div>
+                <div class="details-row-value" id="details-note">
+                  Send only BTC via Bitcoin network. Other coins or networks will result in loss of funds.
+                </div>
+              </div>
+
+              <div class="status-line">
+                <span class="status-dot"></span>
+                Waiting for blockchain confirmation...
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-inner" id="progress-inner"></div>
+      </div>
+
+      <div class="payment-footer">
+        <a href="#" class="back-link">Back to merchant</a>
+        <span class="expires">
+          Invoice expires in <span id="timer">15m 00s</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="brand-footer">
+      By using the payment gateway, you agree to the terms of the Cookie Policy.
+    </div>
+  </div>
+
+  <script>
+    /*********************************************************
+     * 1) CẤU HÌNH CHUNG CHO CÁC LOẠI COIN
+     *********************************************************/
+    const COIN_META = {
+      BTC: {
+        name: "Bitcoin",
+        iconClass: "icon-btc",
+        subtitle: "Pay with Bitcoin",
+        network: "Network: Bitcoin",
+        defaultNote:
+          "Send only BTC via Bitcoin network. Other coins or networks will result in loss of funds."
+      },
+      USDT: {
+        name: "Tether USD",
+        iconClass: "icon-usdt",
+        subtitle: "Stablecoin (USDT)",
+        network: "Network: TRON (TRC20) or ERC20 (check instructions)",
+        defaultNote:
+          "Send only USDT to this address using the correct network (TRC20 or ERC20 as instructed by the prop firm)."
+      },
+      USDC: {
+        name: "USD Coin",
+        iconClass: "icon-usdc",
+        subtitle: "Stablecoin (USDC)",
+        network: "Network: Ethereum",
+        defaultNote: "Send only USDC via Ethereum network."
+      },
+      ETH: {
+        name: "Ether",
+        iconClass: "icon-eth",
+        subtitle: "Pay with ETH",
+        network: "Network: Ethereum",
+        defaultNote: "Send only ETH via Ethereum network."
+      },
+      LTC: {
+        name: "Litecoin",
+        iconClass: "icon-ltc",
+        subtitle: "Pay with Litecoin",
+        network: "Network: Litecoin",
+        defaultNote: "Send only LTC via Litecoin network."
+      }
+    };
+
+    /*********************************************************
+     * 2) CẤU HÌNH 5 GÓI – GIÁ ĐÃ CẬP NHẬT
+     *********************************************************/
+    const PLAN_CONFIG = {
+      "10k": {
+        title: "FTMO Challenge 10k",
+        invoiceId: " invz2PZa7x4M9gdFTMO70-10K-394",
+        usd: "33.34",
+        coins: {
+          BTC: { amountCrypto: "0.00036433 BTC", qr: "qr-10k-btc.png", address: "bc1q-your-10k-btc-address" },
+          USDT:{ amountCrypto: "33.34 USDT",     qr: "qr-10k-usdt.png", address: "T-your-10k-usdt-address" },
+          USDC:{ amountCrypto: "33.34 USDC",     qr: "qr-10k-usdc.png", address: "0x-your-10k-usdc-address" },
+          ETH: { amountCrypto: "0.010864 ETH",   qr: "qr-10k-eth.png",  address: "0x-your-10k-eth-address" },
+          LTC: { amountCrypto: "0.3889 LTC",     qr: "qr-10k-ltc.png",  address: "ltc-your-10k-ltc-address" }
+        }
+      },
+
+      "25k": {
+        title: "FTMO Challenge 25k",
+        invoiceId: " dueo4RDw6q1T6zAFTMO70-25K-092",
+        usd: "88.25",
+        coins: {
+          BTC: { amountCrypto: "0.00096437 BTC", qr: "qr-25k-btc.png", address: "bc1q-your-25k-btc-address" },
+          USDT:{ amountCrypto: "88.25 USDT",     qr: "qr-25k-usdt.png", address: "T-your-25k-usdt-address" },
+          USDC:{ amountCrypto: "88.25 USDC",     qr: "qr-25k-usdc.png", address: "0x-your-25k-usdc-address" },
+          ETH: { amountCrypto: "0.028757 ETH",   qr: "qr-25k-eth.png",  address: "0x-your-25k-eth-address" },
+          LTC: { amountCrypto: "1.0294 LTC",     qr: "qr-25k-ltc.png",  address: "ltc-your-25k-ltc-address" }
+        }
+      },
+
+      "50k": {
+        title: "FTMO Challenge 50k",
+        invoiceId: " qert5OWm1q3J31aAFTMO70-50K-013",
+        usd: "122.83",
+        coins: {
+          BTC: { amountCrypto: "0.00134225 BTC", qr: "qr-50k-btc.png", address: "bc1q-your-50k-btc-address" },
+          USDT:{ amountCrypto: "122.83 USDT",    qr: "qr-50k-usdt.png", address: "T-your-50k-usdt-address" },
+          USDC:{ amountCrypto: "122.83 USDC",    qr: "qr-50k-usdc.png", address: "0x-your-50k-usdc-address" },
+          ETH: { amountCrypto: "0.040025 ETH",   qr: "qr-50k-eth.png",  address: "0x-your-50k-eth-address" },
+          LTC: { amountCrypto: "1.4328 LTC",     qr: "qr-50k-ltc.png",  address: "ltc-your-50k-ltc-address" }
+        }
+      },
+
+      "100k": {
+        title: "FTMO Challenge 100k",
+        invoiceId: " tyyq1ERa7x4Y9gGFTMO70-100K-173",
+        usd: "191.95",
+        coins: {
+          BTC: { amountCrypto: "0.00209757 BTC", qr: "qr-100k-btc.png", address: "bc1q-your-100k-btc-address" },
+          USDT:{ amountCrypto: "191.95 USDT",    qr: "qr-100k-usdt.png", address: "T-your-100k-usdt-address" },
+          USDC:{ amountCrypto: "191.95 USDC",    qr: "qr-100k-usdc.png", address: "0x-your-100k-usdc-address" },
+          ETH: { amountCrypto: "0.062548 ETH",   qr: "qr-100k-eth.png",  address: "0x-your-100k-eth-address" },
+          LTC: { amountCrypto: "2.2390 LTC",     qr: "qr-100k-ltc.png",  address: "ltc-your-100k-ltc-address" }
+        }
+      },
+
+      "200k": {
+        title: "FTMO Challenge 200k",
+        invoiceId: " i2w3fREa2Efư9Dg-200K-035",
+        usd: "381.59",
+        coins: {
+          BTC: { amountCrypto: "0.00416991 BTC", qr: "qr-200k-btc.png", address: "bc1q-your-200k-btc-address" },
+          USDT:{ amountCrypto: "381.59 USDT",    qr: "qr-200k-usdt.png", address: "T-your-200k-usdt-address" },
+          USDC:{ amountCrypto: "381.59 USDC",    qr: "qr-200k-usdc.png", address: "0x-your-200k-usdc-address" },
+          ETH: { amountCrypto: "0.124344 ETH",   qr: "qr-200k-eth.png",  address: "0x-your-200k-eth-address" },
+          LTC: { amountCrypto: "4.4511 LTC",     qr: "qr-200k-ltc.png",  address: "ltc-your-200k-ltc-address" }
+        }
+      }
+    };
+
+
+    // PLAN mặc định nếu không có ?plan=... trên URL
+    const DEFAULT_PLAN_KEY = "200k";
+
+    /*********************************************************
+     * 3) LẤY PLAN TỪ URL
+     *********************************************************/
+    function getSelectedPlanKey() {
+      const params = new URLSearchParams(window.location.search);
+      const key = params.get("plan");
+      if (key && PLAN_CONFIG[key]) return key;
+      return DEFAULT_PLAN_KEY;
+    }
+
+    const planKey = getSelectedPlanKey();
+    const selectedPlan = PLAN_CONFIG[planKey];
+
+    // Cập nhật header theo gói
+    const headerTitleEl = document.querySelector(".header-title");
+    const headerSubEl = document.querySelector(".header-sub");
+    const headerAmountEl = document.getElementById("invoice-amount");
+
+    headerTitleEl.textContent = selectedPlan.title;
+    headerSubEl.textContent = "Invoice ID: " + selectedPlan.invoiceId;
+    headerAmountEl.textContent = `${selectedPlan.usd} USD`;
+
+    /*********************************************************
+     * 4) TẠO MẢNG COIN CHO GÓI ĐANG CHỌN
+     *********************************************************/
+    const paymentOptions = Object.keys(COIN_META).map((code) => {
+      const meta = COIN_META[code];
+      const coinPlan = selectedPlan.coins[code];
+
+      return {
+        code,
+        name: meta.name,
+        iconClass: meta.iconClass,
+        subtitle: meta.subtitle,
+        amountCrypto: coinPlan.amountCrypto,
+        amountFiat: `≈ ${selectedPlan.usd} USD`,
+        qr: coinPlan.qr,
+        address: coinPlan.address,
+        network: meta.network,
+        note: coinPlan.note || meta.defaultNote
+      };
+    });
+
+    /*********************************************************
+     * 5) PHẦN LOGIC UI
+     *********************************************************/
+    const screenMethods = document.getElementById("screen-methods");
+    const screenPayment = document.getElementById("screen-payment");
+    const currencyListEl = document.getElementById("currency-list");
+    const searchInput = document.getElementById("search-input");
+    const noResultEl = document.getElementById("no-result");
+    const backMethodsBtn = document.getElementById("back-methods");
+
+    const payIcon = document.getElementById("pay-icon");
+    const payCoinName = document.getElementById("pay-coin-name");
+    const payCoinNetwork = document.getElementById("pay-coin-network");
+    const payAmountCrypto = document.getElementById("pay-amount-crypto");
+    const payAmountFiat = document.getElementById("pay-amount-fiat");
+    const payQr = document.getElementById("pay-qr");
+    const detailsAmount = document.getElementById("details-amount");
+    const detailsAddress = document.getElementById("details-address");
+    const detailsNote = document.getElementById("details-note");
+    const copyBtn = document.getElementById("copy-btn");
+
+    const timerEl = document.getElementById("timer");
+    const progressInner = document.getElementById("progress-inner");
+
+    let currentOption = null;
+
+    // Render list coin
+    function renderList(filterText = "") {
+      const text = filterText.trim().toLowerCase();
+      currencyListEl.innerHTML = "";
+      let count = 0;
+
+      paymentOptions
+        .filter((opt) => {
+          if (!text) return true;
+          return (
+            opt.name.toLowerCase().includes(text) ||
+            opt.code.toLowerCase().includes(text)
+          );
+        })
+        .forEach((opt) => {
+          count++;
+          const btn = document.createElement("button");
+          btn.className = "currency-item";
+          btn.setAttribute("data-code", opt.code);
+
+          btn.innerHTML = `
+            <div class="currency-icon ${opt.iconClass}">${opt.code[0]}</div>
+            <div class="currency-main">
+              <div class="currency-name">${opt.name}</div>
+              <div class="currency-sub">${opt.subtitle}</div>
+            </div>
+            <div class="currency-amount">${opt.amountCrypto}</div>
+            <div class="currency-chevron">›</div>
+          `;
+
+          btn.addEventListener("click", () => openPayment(opt));
+          currencyListEl.appendChild(btn);
+        });
+
+      noResultEl.style.display = count === 0 ? "block" : "none";
+    }
+
+    // Mở màn QR
+    function openPayment(option) {
+      currentOption = option;
+
+      payIcon.className = "currency-icon " + option.iconClass;
+      payIcon.textContent = option.code[0];
+
+      payCoinName.textContent = `${option.name} (${option.code})`;
+      payCoinNetwork.textContent = option.network || "";
+      payAmountCrypto.textContent = option.amountCrypto;
+      payAmountFiat.textContent = option.amountFiat;
+      payQr.src = option.qr;
+      payQr.alt = option.name + " QR";
+
+      detailsAmount.textContent = option.amountCrypto;
+      detailsAddress.textContent = option.address;
+      detailsNote.textContent =
+        option.note ||
+        `Send only ${option.code} to this address via the correct network.`;
+
+      copyBtn.classList.remove("copied");
+      copyBtn.textContent = "Copy";
+
+      screenMethods.classList.remove("active");
+      screenPayment.classList.add("active");
+    }
+
+    function backToMethods() {
+      screenPayment.classList.remove("active");
+      screenMethods.classList.add("active");
+    }
+
+    // Copy address
+    copyBtn.addEventListener("click", () => {
+      if (!currentOption) return;
+      const text = currentOption.address;
+
+      if (!navigator.clipboard) {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      } else {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+
+      copyBtn.classList.add("copied");
+      copyBtn.textContent = "Copied";
+      setTimeout(() => {
+        copyBtn.classList.remove("copied");
+        copyBtn.textContent = "Copy";
+      }, 2000);
+    });
+
+    // Search
+    searchInput.addEventListener("input", () => {
+      renderList(searchInput.value);
+    });
+
+    // Back button
+    backMethodsBtn.addEventListener("click", backToMethods);
+
+    // Timer 15 phút + progress
+    let totalSeconds = 15 * 60;
+    let remaining = totalSeconds;
+
+    function tick() {
+      remaining--;
+      if (remaining < 0) remaining = 0;
+
+      const m = String(Math.floor(remaining / 60)).padStart(2, "0");
+      const s = String(remaining % 60).padStart(2, "0");
+      timerEl.textContent = `${m}m ${s}s`;
+
+      const ratio = remaining / totalSeconds;
+      progressInner.style.transform = `scaleX(${ratio})`;
+
+      if (remaining > 0) {
+        setTimeout(tick, 1000);
+      }
+    }
+
+    // INIT
+    renderList();
+    tick();
+  </script>
+</body>
+</html>
